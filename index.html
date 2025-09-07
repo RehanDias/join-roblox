@@ -1,31 +1,100 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Join Roblox Server</title>
+  <style>
+    :root { color-scheme: light; }
+    body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background:#f3f4f6; }
+    .card { max-width: 520px; margin: 12vh auto; background:#fff; padding:28px; border-radius:16px; box-shadow: 0 10px 30px rgba(0,0,0,.08); text-align:center; }
+    .title { font-weight:800; font-size: clamp(20px,3.6vw,26px); color:#111; margin:0 0 10px; }
+    .muted { color:#475569; line-height:1.5; white-space:pre-line; }
+    .row { display:flex; gap:8px; justify-content:center; margin-top:18px; flex-wrap:wrap; }
+    .btn { padding:12px 16px; border-radius:10px; border:0; font-weight:700; cursor:pointer; }
+    .btn-primary { background:#000; color:#fff; }
+    .btn-ghost { background:#eef2f7; color:#111; }
+    .field { display:inline-block; background:#f8fafc; padding:8px 10px; border-radius:8px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color:#111; }
+  </style>
   <script>
-    window.onload = () => {
-      const urlParams = new URLSearchParams(window.location.search);
-      const jobId = urlParams.get("jobid");
-      const placeId = urlParams.get("placeid");
+    // Helper: parse placeId + jobId from either query or /join/<place>/<job>
+    function extractIds() {
+      const params = new URLSearchParams(location.search);
+      let placeId = params.get("placeid");
+      let jobId   = params.get("jobid");
 
-      if (jobId && placeId) {
-        const link = `roblox://placeId=${placeId}&gameInstanceId=${jobId}`;
-        window.location.href = link;
-        document.body.innerHTML = `
-          <div style="font-family:sans-serif;text-align:center;margin-top:20%;">
-            <h2>Trying to open Roblox...</h2>
-            <p>If nothing happens, make sure Roblox app is installed.</p>
-            <a href="${link}" style="display:inline-block;margin-top:20px;padding:10px 20px;background:black;color:white;border-radius:8px;text-decoration:none;">Open Roblox</a>
-          </div>
-        `;
-      } else {
-        document.body.innerHTML = "<h2 style='text-align:center;margin-top:20%;'>⚠️ Job ID atau Place ID tidak ditemukan.</h2>";
+      if (!placeId || !jobId) {
+        // Try path style: /join/<placeId>/<jobId>
+        const parts = location.pathname.split("/").filter(Boolean);
+        const j = parts.indexOf("join");
+        if (j !== -1 && parts[j+1] && parts[j+2]) {
+          placeId = placeId || decodeURIComponent(parts[j+1]);
+          jobId   = jobId   || decodeURIComponent(parts[j+2]);
+        }
       }
-    };
+      return { placeId, jobId };
+    }
+
+    function robloxDeepLink(placeId, jobId) {
+      return `roblox://experiences/start?placeId=${encodeURIComponent(placeId)}&gameInstanceId=${encodeURIComponent(jobId)}`;
+    }
+
+    async function copy(text) {
+      try { await navigator.clipboard.writeText(text); alert("Copied!"); }
+      catch { /* ignore */ }
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      const ui = {
+        info: document.getElementById("info"),
+        openBtn: document.getElementById("openBtn"),
+        copyJob: document.getElementById("copyJob"),
+        copyPlace: document.getElementById("copyPlace"),
+        rawLink: document.getElementById("rawLink"),
+      };
+
+      const { placeId, jobId } = extractIds();
+
+      if (!placeId || !jobId) {
+        ui.info.textContent = "⚠️ Place ID atau Job ID tidak ditemukan di URL.\nGunakan format:\n/join/<PLACEID>/<JOBID>\natau\n?placeid=<PLACEID>&jobid=<JOBID>";
+        document.getElementById("actions").style.display = "none";
+        return;
+      }
+
+      const deep = robloxDeepLink(placeId, jobId);
+      ui.info.innerHTML =
+        `Place ID: <span class="field">${placeId}</span>\n` +
+        `Job ID: <span class="field">${jobId}</span>\n\n` +
+        `Mencoba membuka Roblox...`;
+
+      ui.rawLink.textContent = deep;
+      ui.rawLink.href = deep
+      ui.openBtn.onclick = () => location.href = deep;
+      ui.copyJob.onclick = () => copy(jobId);
+      ui.copyPlace.onclick = () => copy(placeId);
+      location.href = deep;
+      setTimeout(() => {
+      }, 1200);
+    });
   </script>
 </head>
-<body style="background:#f3f4f6;">
+<body>
+  <div class="card">
+    <h1 class="title">Join Roblox Server</h1>
+    <p id="info" class="muted">Menyiapkan…</p>
+
+    <div id="actions" class="row">
+      <button id="openBtn" class="btn btn-primary">Open Roblox</button>
+      <button id="copyPlace" class="btn btn-ghost">Copy Place ID</button>
+      <button id="copyJob" class="btn btn-ghost">Copy Job ID</button>
+    </div>
+
+    <p class="muted" style="margin-top:18px;">
+      Jika tidak otomatis, klik tombol di atas. Pastikan aplikasi Roblox sudah terinstal.
+    </p>
+    <p class="muted" style="margin-top:6px; word-break: break-all;">
+      Deep link: <a id="rawLink" class="field" href="#" rel="noopener">…</a>
+    </p>
+  </div>
 </body>
 </html>
