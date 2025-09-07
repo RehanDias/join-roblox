@@ -17,24 +17,6 @@
     .field { display:inline-block; background:#f8fafc; padding:8px 10px; border-radius:8px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color:#111; }
   </style>
   <script>
-    // Helper: parse placeId + jobId from either query or /join/<place>/<job>
-    function extractIds() {
-      const params = new URLSearchParams(location.search);
-      let placeId = params.get("placeid");
-      let jobId   = params.get("jobid");
-
-      if (!placeId || !jobId) {
-        // Try path style: /join/<placeId>/<jobId>
-        const parts = location.pathname.split("/").filter(Boolean);
-        const j = parts.indexOf("join");
-        if (j !== -1 && parts[j+1] && parts[j+2]) {
-          placeId = placeId || decodeURIComponent(parts[j+1]);
-          jobId   = jobId   || decodeURIComponent(parts[j+2]);
-        }
-      }
-      return { placeId, jobId };
-    }
-
     function robloxDeepLink(placeId, jobId) {
       return `roblox://experiences/start?placeId=${encodeURIComponent(placeId)}&gameInstanceId=${encodeURIComponent(jobId)}`;
     }
@@ -51,13 +33,17 @@
         copyJob: document.getElementById("copyJob"),
         copyPlace: document.getElementById("copyPlace"),
         rawLink: document.getElementById("rawLink"),
+        actions: document.getElementById("actions"),
       };
 
-      const { placeId, jobId } = extractIds();
+      const params = new URLSearchParams(location.search);
+      const placeId = params.get("placeid");
+      const jobId   = params.get("jobid");
 
+      // validasi: HARUS ada keduanya
       if (!placeId || !jobId) {
-        ui.info.textContent = "⚠️ Place ID atau Job ID tidak ditemukan di URL.\nGunakan format:\n/join/<PLACEID>/<JOBID>\natau\n?placeid=<PLACEID>&jobid=<JOBID>";
-        document.getElementById("actions").style.display = "none";
+        ui.info.textContent = "❌ Format URL salah!\nGunakan format:\n?placeid=<PLACEID>&jobid=<JOBID>";
+        ui.actions.style.display = "none";
         return;
       }
 
@@ -68,13 +54,14 @@
         `Mencoba membuka Roblox...`;
 
       ui.rawLink.textContent = deep;
-      ui.rawLink.href = deep
+      ui.rawLink.href = deep;
+
       ui.openBtn.onclick = () => location.href = deep;
       ui.copyJob.onclick = () => copy(jobId);
       ui.copyPlace.onclick = () => copy(placeId);
+
+      // auto redirect
       location.href = deep;
-      setTimeout(() => {
-      }, 1200);
     });
   </script>
 </head>
